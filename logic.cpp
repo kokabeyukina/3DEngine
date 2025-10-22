@@ -34,3 +34,48 @@ std::ostream& operator<<(std::ostream& os, std::vector<float> v){
     os << "}";
     return os;
 };
+
+std::vector<std::string> formatArgs(std::string argLine){
+    std::vector<std::string> args = {""};
+    int argc = 0;
+    char stopChar = ' ';
+    for(int i = 0; i < argLine.length(); i++){
+        if(argLine[i] == '"'){
+            if(stopChar == ' '){
+                stopChar = '"';
+            }else{
+                stopChar = ' ';
+            }
+        }
+        if(argLine[i] == stopChar && i != 0){
+            argc++;
+            args.push_back("");
+        }else if(argLine[i] != '"'){
+            args[argc].push_back(argLine[i]);
+        }
+    }
+    return args;
+}
+
+void formatFileInput(std::string argLine, std::function<void(std::ifstream&)> func){
+    std::vector<std::string> args = formatArgs(argLine);
+    for(int i = 0; i < args.size(); i++){
+        std::cout << args[i] << std::endl;
+        // std::string fName;
+        // if(args[i][0] != '"') fName = args[i]; 
+        // else fName = args[i].substr(1, args[i].size()-2);
+        // std::cout << "fName: " << fName << std::endl;
+        // std::ifstream file(fName);
+        std::ifstream file(args[i]);
+        if(file.is_open()){
+            func(file);
+            //std::string data;
+            //while(std::getline(file, data)){
+            //    std::cout << data << std::endl;
+            //}
+            file.close();
+        }else{
+            std::cout << "Error: Given arg is not a file\n";
+        }
+    }
+}

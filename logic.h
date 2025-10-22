@@ -8,6 +8,8 @@
 #include <sstream>
 #include <algorithm>
 #include <windows.h>
+#include <fstream>
+#include <functional>
 
 struct mat4x4{
     float m[4][4] = {0};
@@ -280,3 +282,6 @@ struct triangle{
 struct mesh{
     std::vector<triangle> tris;
 };
+
+std::vector<std::string> formatArgs(std::string argLine);
+void formatFileInput(std::string argLine, std::function<void(std::ifstream&)> func);
