@@ -1,81 +1,714 @@
 #include "logic.h"
 #include "tile.h"
 
-std::ostream& operator<<(std::ostream& os, const vec3D v){
-    os << "{x: " << v.x << ", y: " << v.y << ", z: " << v.z << "}";
-    return os;
-};
-
-COLORREF& operator*=(COLORREF& color, const vec3D v){
-    int B = floor(color/65536); 
-    int G = floor(color/256) - B*256; 
-    int R = floor(color) - G*256 - B*65536;
-    R *= v.x; G *= v.y; B *= v.z; 
-    color = R+G*256+B*65536;
-    return color;
-};
-
-std::ostream& operator<<(std::ostream& os, const triangle t){
-    os << "{\n   0: " << t.p[0] << "\n   1: " << t.p[1] << "\n   2: " << t.p[2] << "\n}";
-    return os;
-};
-
-std::ostream& operator<<(std::ostream& os, const Tile t){
-    os << "{\n   position: {x: " << t.position.x << ", y: " << t.position.y << ", z: " << t.position.z << 
-    "}\n   angle: {x:" << t.angle.x << ", y: " << t.angle.y << ", z: " << t.angle.z << "}\n   color: "<< std::hex << t.color << "\n}";
-    return os;
-};
-
-std::ostream& operator<<(std::ostream& os, std::vector<float> v){
-    os << "{" << v[1];
-    for(int i = 1; i < v.size(); i++){
-        os << ", " << v[i];
-    }
-    os << "}";
-    return os;
-};
-
-std::vector<std::string> formatArgs(std::string argLine){
-    std::vector<std::string> args = {""};
-    int argc = 0;
-    char stopChar = ' ';
-    for(int i = 0; i < argLine.length(); i++){
-        if(argLine[i] == '"'){
-            if(stopChar == ' '){
-                stopChar = '"';
-            }else{
-                stopChar = ' ';
-            }
-        }
-        if(argLine[i] == stopChar && i != 0){
-            argc++;
-            args.push_back("");
-        }else if(argLine[i] != '"'){
-            args[argc].push_back(argLine[i]);
-        }
-    }
-    return args;
+mat4x4 mat4x4::inverse(){
+	return {
+        m[0][0], m[1][0], m[2][0], 0.0f,
+        m[0][1], m[1][1], m[2][1], 0.0f,
+        m[0][2], m[1][2], m[2][2], 0.0f,
+        -(m[3][0] * m[0][0] + m[3][1] * m[0][1] + m[3][2] * m[0][2]),
+        -(m[3][0] * m[1][0] + m[3][1] * m[1][1] + m[3][2] * m[1][2]),
+        -(m[3][0] * m[2][0] + m[3][1] * m[2][1] + m[3][2] * m[2][2]),
+        1.0f
+    };
 }
 
-void formatFileInput(std::string argLine, std::function<void(std::ifstream&)> func){
-    std::vector<std::string> args = formatArgs(argLine);
-    for(int i = 0; i < args.size(); i++){
-        std::cout << args[i] << std::endl;
-        // std::string fName;
-        // if(args[i][0] != '"') fName = args[i]; 
-        // else fName = args[i].substr(1, args[i].size()-2);
-        // std::cout << "fName: " << fName << std::endl;
-        // std::ifstream file(fName);
+/*mat4x4 mat4x4::operator*(const mat4x4& mat) const{
+	mat4x4 matrix;
+	for (int c = 0; c < 4; c++)
+	for (int r = 0; r < 4; r++)
+		matrix.m[r][c] = 
+            m[r][0] * mat.m[0][c] + 
+            m[r][1] * mat.m[1][c] + 
+            m[r][2] * mat.m[2][c] + 
+            m[r][3] * mat.m[3][c];
+	return matrix;
+}
+
+float vec3D::len() const{
+    return sqrtf(x*x + y*y + z*z);
+}*/
+
+vec3D vec3D::normalize() const{
+    return *this/sqrtf(x*x + y*y + z*z);
+}
+
+vec3D vec3D::rotate(const vec3D& v) const{
+    mat4x4 matRotX = {0}, matRotY = {0}, matRotZ = {0};
+
+    matRotX.m[0][0] = 1;
+    matRotX.m[1][1] =  cosf(v.x);
+    matRotX.m[1][2] =  sinf(v.x);
+    matRotX.m[2][1] = -sinf(v.x);
+    matRotX.m[2][2] =  cosf(v.x);
+    matRotX.m[3][3] = 1;
+
+    matRotY.m[0][0] =  cosf(v.y);
+    matRotY.m[0][2] = -sinf(v.y);
+    matRotY.m[1][1] = 1;
+    matRotY.m[2][0] =  sinf(v.y);
+    matRotY.m[2][2] =  cosf(v.y);
+    matRotY.m[3][3] = 1;
+
+    matRotZ.m[0][0] =  cosf(v.z);
+    matRotZ.m[0][1] =  sinf(v.z);
+    matRotZ.m[1][0] = -sinf(v.z);
+    matRotZ.m[1][1] =  cosf(v.z);
+    matRotZ.m[2][2] = 1;
+    matRotZ.m[3][3] = 1;
+    return *this * matRotX * matRotY * matRotZ;
+}
+
+/*vec3D vec3D::rotate(const float x, const float y, const float z) const{
+    mat4x4 matRotX = {0}, matRotY = {0}, matRotZ = {0};
+
+    matRotX.m[0][0] = 1;
+    matRotX.m[1][1] =  cosf(x);
+    matRotX.m[1][2] =  sinf(x);
+    matRotX.m[2][1] = -sinf(x);
+    matRotX.m[2][2] =  cosf(x);
+    matRotX.m[3][3] = 1;
+
+    matRotY.m[0][0] =  cosf(y);
+    matRotY.m[0][2] = -sinf(y);
+    matRotY.m[1][1] = 1;
+    matRotY.m[2][0] =  sinf(y);
+    matRotY.m[2][2] =  cosf(y);
+    matRotY.m[3][3] = 1;
+
+    matRotZ.m[0][0] =  cosf(z);
+    matRotZ.m[0][1] =  sinf(z);
+    matRotZ.m[1][0] = -sinf(z);
+    matRotZ.m[1][1] =  cosf(z);
+    matRotZ.m[2][2] = 1;
+    matRotZ.m[3][3] = 1;
+    return *this * matRotX * matRotY * matRotZ;
+}*/
+
+BOOL vec3D::operator==(const vec3D& v) const{
+    return x == v.x && y == v.y && z == v.z;
+}
+
+void vec3D::operator+=(const vec3D& v){
+    x += v.x;
+    y += v.y;
+    z += v.z;
+}
+
+void vec3D::operator-=(const vec3D& v){
+    x -= v.x;
+    y -= v.y;
+    z -= v.z;
+}
+
+void vec3D::operator*=(const vec3D& v){
+    x *= v.x;
+    y *= v.y;
+    z *= v.z;
+}
+
+void vec3D::operator+=(const float n){
+    x += n;
+    y += n;
+    z += n;
+}
+
+void vec3D::operator-=(const float n){
+    x -= n;
+    y -= n;
+    z -= n;
+}
+
+/*void vec3D::operator/=(const float n){
+    x /= n;
+    y /= n;
+    z /= n;
+}*/
+
+vec3D vec3D::operator+(const vec3D& v) const{
+    return {
+        x + v.x,
+        y + v.y,
+        z + v.z
+    };
+}
+
+vec3D vec3D::operator-(const vec3D& v) const{
+    return {
+        x - v.x,
+        y - v.y,
+        z - v.z
+    };
+}
+
+float vec3D::operator*(const vec3D& v) const{
+    return x * v.x + y * v.y + z * v.z;
+}
+
+vec3D vec3D::operator%(const vec3D& v) const{
+    return {
+        y * v.z - z * v.y,
+        z * v.x - x * v.z,
+        x * v.y - y * v.x
+    };
+}
+
+vec3D vec3D::operator+(const float n) const{
+    return {
+        x + n,
+        y + n,
+        z + n
+    };
+}
+
+vec3D vec3D::operator-(const float n) const{
+    return {
+        x - n,
+        y - n,
+        z - n
+    };
+}
+
+vec3D vec3D::operator*(const float n) const{
+    return {
+        x * n,
+        y * n,
+        z * n
+    };
+}
+
+vec3D vec3D::operator/(const float n) const{
+    return {
+        x / n,
+        y / n,
+        z / n
+    };
+}
+
+vec3D vec3D::operator*(const mat4x4& m) const{
+    float w = x * m.m[0][3] + y * m.m[1][3] + z * m.m[2][3] + m.m[3][3];
+    if(w == 0.0f) return {0, 0, 0};
+    float invW = 1/w;
+    return {
+        (x * m.m[0][0] + y * m.m[1][0] + z * m.m[2][0] + m.m[3][0])*invW,
+        (x * m.m[0][1] + y * m.m[1][1] + z * m.m[2][1] + m.m[3][1])*invW,
+        (x * m.m[0][2] + y * m.m[1][2] + z * m.m[2][2] + m.m[3][2])*invW
+    };
+}
+
+void vec3D::operator*=(const mat4x4& m){
+    float w = x * m.m[0][3] + y * m.m[1][3] + z * m.m[2][3] + m.m[3][3];
+    if(w == 0.0f){
+        *this = {0, 0, 0};
+        return;
+    }
+    float invW = 1/w;
+    x = (x * m.m[0][0] + y * m.m[1][0] + z * m.m[2][0] + m.m[3][0])*invW;
+    y = (x * m.m[0][1] + y * m.m[1][1] + z * m.m[2][1] + m.m[3][1])*invW;
+    z = (x * m.m[0][2] + y * m.m[1][2] + z * m.m[2][2] + m.m[3][2])*invW;
+}
+
+vec3D::operator std::string() const{
+    return std::format("{{x: {}, y: {}, z: {}}}", x, y, z);
+}
+
+void operator<<(std::ostream& os, const vec3D& v){
+    os << (std::string)v;
+}
+
+void operator*=(COLORREF& color, const vec3D& v){
+    int B = (color >> 16) & 0xff;
+    int G = (color >> 8) & 0xff;
+    int R = color & 0xff;
+    B = (int)(B*v.x) & 0xff; 
+    G = (int)(G*v.y) & 0xff; 
+    R = (int)(R*v.z) & 0xff; 
+    color = (B << 16) | (G << 8) | R;
+}
+
+triangle::triangle(const vec3D& p0, const vec3D& p1, const vec3D& p2, COLORREF c=RGB(255, 255, 255))
+ : p(p0, p1, p2), color(c){
+    n = normal();
+}
+
+triangle::triangle(const vec3D& p0, const vec3D& p1, const vec3D& p2, const vec3D& normal, COLORREF c=RGB(255, 255, 255))
+ : p(p0, p1, p2), n(normal), color(c){}
+
+triangle triangle::rotate(const vec3D& v) const{
+    mat4x4 matRotX, matRotY, matRotZ;
+
+    matRotX.m[0][0] = 1;
+    matRotX.m[1][1] =  cosf(v.x);
+    matRotX.m[1][2] =  sinf(v.x);
+    matRotX.m[2][1] = -sinf(v.x);
+    matRotX.m[2][2] =  cosf(v.x);
+    matRotX.m[3][3] = 1;
+
+    matRotY.m[0][0] =  cosf(v.y);
+    matRotY.m[0][2] = -sinf(v.y);
+    matRotY.m[1][1] = 1;
+    matRotY.m[2][0] =  sinf(v.y);
+    matRotY.m[2][2] =  cosf(v.y);
+    matRotY.m[3][3] = 1;
+
+    matRotZ.m[0][0] =  cosf(v.z);
+    matRotZ.m[0][1] =  sinf(v.z);
+    matRotZ.m[1][0] = -sinf(v.z);
+    matRotZ.m[1][1] =  cosf(v.z);
+    matRotZ.m[2][2] = 1;
+    matRotZ.m[3][3] = 1;
+    return *this * matRotX * matRotY * matRotZ;
+}
+
+vec3D triangle::normal() const{
+    return ((p[1] - p[0])%(p[2] - p[0])).normalize();
+}
+
+vec3D triangle::normal(const vec3D& v0, const vec3D& v1, const vec3D& v2){
+    return ((v1 - v0)%(v2 - v0)).normalize();
+}
+
+void triangle::operator*=(const vec3D& v){
+    p[0] *= v;
+    p[1] *= v;
+    p[2] *= v;
+}
+
+void triangle::operator+=(const float n){
+    p[0] += n;
+    p[1] += n;
+    p[2] += n;
+}
+
+void triangle::operator-=(const float n){
+    p[0] -= n;
+    p[1] -= n;
+    p[2] -= n;
+}
+
+triangle triangle::operator+(const float num) const{
+    return {
+        p[0] + num,
+        p[1] + num,
+        p[2] + num,
+        n, color
+    };
+}
+
+triangle triangle::operator+(const vec3D& v) const{
+    return {
+        p[0] + v,
+        p[1] + v,
+        p[2] + v,
+        n, color
+    };
+}
+
+triangle triangle::operator-(const vec3D& v) const{
+    return {
+        p[0] - v,
+        p[1] - v,
+        p[2] - v,
+        n, color
+    };
+}
+
+triangle triangle::operator*(const mat4x4& m) const{
+    return {
+        p[0] * m,
+        p[1] * m,
+        p[2] * m,
+        color
+    };
+}
+
+void operator<<(std::ostream& os, const triangle& t){
+    os << (std::string)t;
+}
+
+triangle::operator std::string() const{
+    return std::format("{{\n   0: {},\n   1: {},\n   2: {}\n}}", (std::string)p[0], (std::string)p[1], (std::string)p[2]);
+}
+
+cube::cube(float edge) : a(edge){
+    r = a/2;
+
+    int triangleIndex = 0;
+    for(int i = 0; i < 6; i++){
+        int axis = i / 2;
+        float side = (i % 2 == 0) ? 1.0f : -1.0f;
+
+        vec3D v[4];
+        for(int j = 0; j < 4; j++){
+            float d = ((j & 1) ? 1.0f : -1.0f) * r;
+            float b = ((j & 2) ? 1.0f : -1.0f) * r;
+
+            if(axis == 0) v[j] = {side * r, d, b}; 
+            if(axis == 1) v[j] = {d, -side * r, b};
+            if(axis == 2) v[j] = {d, b, side * r}; 
+        }
+
+        if(side > 0){
+            m[triangleIndex++] = {v[0], v[1], v[3]};
+            m[triangleIndex++] = {v[0], v[3], v[2]};
+        }else{
+            m[triangleIndex++] = {v[0], v[3], v[1]};
+            m[triangleIndex++] = {v[0], v[2], v[3]};
+        }
+    }
+    /*// EAST
+    m[0] =  {vec3D{ r, -r, -r}, vec3D{ r,  r, -r}, vec3D{ r,  r,  r}};
+    m[1] =  {vec3D{ r, -r, -r}, vec3D{ r,  r,  r}, vec3D{ r, -r,  r}};
+    // WEST
+    m[2] =  {vec3D{-r, -r,  r}, vec3D{-r,  r,  r}, vec3D{-r,  r, -r}};
+    m[3] =  {vec3D{-r, -r,  r}, vec3D{-r,  r, -r}, vec3D{-r, -r, -r}};
+    // TOP
+    m[4] =  {vec3D{ r, -r,  r}, vec3D{-r, -r,  r}, vec3D{-r, -r, -r}};
+    m[5] =  {vec3D{ r, -r,  r}, vec3D{-r, -r, -r}, vec3D{ r, -r, -r}};
+    //BOTTOM
+    m[6] =  {vec3D{-r,  r, -r}, vec3D{-r,  r,  r}, vec3D{ r,  r,  r}};
+    m[7] =  {vec3D{-r,  r, -r}, vec3D{ r,  r,  r}, vec3D{ r,  r, -r}};
+    // NORTH
+    m[8] =  {vec3D{ r, -r,  r}, vec3D{ r,  r,  r}, vec3D{-r,  r,  r}};
+    m[9] =  {vec3D{ r, -r,  r}, vec3D{-r,  r,  r}, vec3D{-r, -r,  r}};
+    // SOUTH
+    m[10] = {vec3D{-r, -r, -r}, vec3D{-r,  r, -r}, vec3D{ r,  r, -r}};
+    m[11] = {vec3D{-r, -r, -r}, vec3D{ r,  r, -r}, vec3D{ r, -r, -r}};*/
+}
+
+void FormatFileInput(int argc, wchar_t* args[], std::function<void(std::ifstream&)> func){
+    for(int i = 1; i < argc; i++){
+        wprintf(L"Argument: %ls\n", args[i]);
         std::ifstream file(args[i]);
         if(file.is_open()){
             func(file);
-            //std::string data;
-            //while(std::getline(file, data)){
-            //    std::cout << data << std::endl;
-            //}
             file.close();
         }else{
-            std::cout << "Error: Given arg is not a file\n";
+            std::cout << "Argument is not file.\n";
         }
     }
 }
+
+void FormatFileInput(LPSTR lpCmdLine, std::function<void(std::string, std::string, vec3D)> func){
+    std::stringstream ss(lpCmdLine);
+    std::string param, currentObj, currentMtl;
+    vec3D currentPos;
+    std::map<std::string, std::tuple<std::string, vec3D>> objs;
+
+    while(ss >> std::quoted(param, '"', (char)0)){
+        if(param.find(".obj") != std::string::npos || param.find(".OBJ") != std::string::npos){
+            currentObj = param;
+            currentMtl = "";
+            currentPos = {0,0,0};
+            objs[currentObj] = {currentMtl, currentPos};
+
+        }else if(param == "-mtl"){
+            if(currentObj.empty()){
+                std::cerr << "Error: Target obj file must be specified before -mtl flag.\n";
+                return; 
+            }
+
+            ss >> param;
+
+            if(param.find(".mtl") == std::string::npos || param.find(".MTL") != std::string::npos){
+                std::cout << "Error: -mtl requires a valid mtl file after it.\n";
+                return;
+            }
+
+            currentMtl = param;
+            objs[currentObj] = {currentMtl, currentPos};
+
+        }else if(param == "-p"){
+            if(currentObj.empty()){
+                std::cerr << "Error: Target obj file must be specified before -p flag.\n";
+                return; 
+            }
+
+            if(!(ss >> param) || !ParseVector(param, currentPos)){
+                std::cerr << "Error: -p requires format x,y,z (e.g., -2,0.2,3) after it.\n";
+                return; 
+            }
+
+            objs[currentObj] = {currentMtl, currentPos};
+        }
+    }
+    for(auto [obj, params] : objs){
+        auto [mtl, pos] = params;
+        func(obj, mtl, pos);
+        std::cout << obj << ": " << mtl << ", " << (std::string)pos << "\n";
+    }
+}
+
+bool ParseVector(const std::string& input, vec3D& outPos){
+    float x, y, z;
+    char c1, c2;
+    std::stringstream ss(input);
+    
+    if(!(ss >> x >> c1 >> y >> c2 >> z) || c1 != ',' || c2 != ',')
+        return false;
+    
+    outPos = {x, -y, z};
+    return true;
+}
+
+mesh ObjToMesh(std::string obj, std::string mtl, vec3D pos){
+    mesh rMesh;
+    std::vector<vec3D> tempVerts;
+    std::map<std::string, COLORREF> materials;
+    COLORREF currentColor = RGB(255, 255, 255);
+    std::string line, key;
+    std::ifstream file(obj);
+
+    if(!file.is_open()) return rMesh;
+    if(mtl != "") materials = LoadMaterials(mtl);
+
+    while(std::getline(file, line)){
+        if(line.empty()) continue;
+        std::stringstream ss(line);
+        ss >> key;
+
+        if(key == "mtllib"){
+            if(mtl != "") continue;
+
+            std::string mtlFilename;
+            ss >> mtlFilename;
+
+            if(obj.rfind("\\") != std::string::npos){
+                materials = LoadMaterials(obj.substr(0, obj.rfind("\\"))+"\\"+mtlFilename);
+            }else if(obj.rfind("/") != std::string::npos){
+                materials = LoadMaterials(obj.substr(0, obj.rfind("/"))+"/"+mtlFilename);
+            }else{
+                materials = LoadMaterials(".\\"+mtlFilename);
+            }
+            
+        }else if(key == "usemtl"){
+            std::string mtlName;
+            ss >> mtlName;
+            if(materials.count(mtlName)) currentColor = materials[mtlName];
+
+        }else if(key == "v"){
+            vec3D v;
+            ss >> v.x >> v.y >> v.z;
+            v.y *= -1;
+            v.z *= -1;
+            tempVerts.push_back(v);
+
+        }else if(key == "f"){
+            std::string segment;
+            std::vector<int> faceIndices;
+
+            while(ss >> segment){
+                size_t slashPos = segment.find('/');
+                std::string indexStr = slashPos == std::string::npos ? segment : segment.substr(0, slashPos);
+                
+                faceIndices.push_back(std::stoi(indexStr) - 1);
+            }
+
+            for(size_t i = 1; i < faceIndices.size() - 1; i++){
+                rMesh.tris.push_back({
+                    tempVerts[faceIndices[0]]+pos,
+                    tempVerts[faceIndices[i]]+pos,
+                    tempVerts[faceIndices[i + 1]]+pos,
+                    currentColor
+                });
+            }
+        }
+    }
+    file.close();
+    return rMesh;
+}
+mesh ObjToMeshC(std::string obj, std::string mtl, vec3D pos) {
+    mesh rMesh;
+    std::vector<vec3D> tempVerts;
+    
+    //tempVerts.reserve(50000); 
+    //rMesh.tris.reserve(100000);
+
+    FILE* file = fopen(obj.c_str(), "r");
+    if (!file) return rMesh;
+
+    std::map<std::string, COLORREF> materials;
+    if (mtl != "") materials = LoadMaterials(mtl);
+    COLORREF currentColor = RGB(255, 255, 255);
+
+    char lineHeader[128];
+    while(fscanf(file, "%s", lineHeader) != EOF){
+        if(strcmp(lineHeader, "mtllib") == 0){
+            if(mtl != "") continue;
+
+            char mtlFilename[128];
+            fscanf(file, "%s\n", mtlFilename);
+
+            if(obj.rfind("\\") != std::string::npos){
+                materials = LoadMaterials(obj.substr(0, obj.rfind("\\"))+"\\"+mtlFilename);
+            }else if(obj.rfind("/") != std::string::npos){
+                materials = LoadMaterials(obj.substr(0, obj.rfind("/"))+"/"+mtlFilename);
+            }else{
+                materials = LoadMaterials("./"+(std::string)mtlFilename);
+            }
+            
+        }else if(strcmp(lineHeader, "usemtl") == 0){
+            char mtlName[128];
+            fscanf(file, "%s\n", mtlName);
+            if (materials.count(mtlName)) currentColor = materials[mtlName];
+
+        }else if(strcmp(lineHeader, "v") == 0){
+            vec3D v;
+            fscanf(file, "%f %f %f\n", &v.x, &v.y, &v.z);
+            v.y *= -1; v.z *= -1;
+            tempVerts.push_back(v);
+
+        }else if(strcmp(lineHeader, "f") == 0){
+            char line[256];
+            fgets(line, 256, file);
+            
+            std::vector<int> faceIndices;
+            char* token = strtok(line, " ");
+            while(token){
+                faceIndices.push_back(atoi(token) - 1);
+                token = strtok(NULL, " ");
+            }
+
+            for(size_t i = 1; i < faceIndices.size() - 1; ++i){
+                rMesh.tris.push_back({
+                    tempVerts[faceIndices[0]]+pos,
+                    tempVerts[faceIndices[i]]+pos,
+                    tempVerts[faceIndices[i + 1]]+pos,
+                    currentColor
+                });
+            }
+        }
+    }
+    fclose(file);
+    return rMesh;
+}
+
+std::map<std::string, COLORREF> LoadMaterials(std::string filename){
+    std::map<std::string, COLORREF> materials;
+    std::ifstream file(filename);
+    
+    if(!file.is_open()) return materials;
+
+    std::string line, key;
+    std::string currentMtlName;
+
+    while(std::getline(file, line)){
+        std::stringstream ss(line);
+        ss >> key;
+
+        if(key == "newmtl"){
+            ss >> currentMtlName;
+        }else if(key == "Kd"){ // Diffuse color (RGB floats 0.0 - 1.0)
+            float r, g, b;
+            ss >> r >> g >> b;
+            materials[currentMtlName] = RGB((int)(r * 255), (int)(g * 255), (int)(b * 255));
+        }
+    }
+    file.close();
+    return materials;
+}
+
+void ReadFile(std::ifstream& file){
+    std::string data;
+    int totalLines = 0;
+    while(std::getline(file, data)){
+        totalLines++;
+    }
+    file.clear();
+    file.seekg(0);
+    int line = 1;
+    int width = std::log10(totalLines)+1;
+    while(std::getline(file, data)){
+        std::cout << std::right << std::setw(width) << line << " | " << data << std::endl;
+        line++;
+    }
+}
+
+void PixelBuffer::Resize(int width, int height){
+    if(pixels) delete[] pixels;
+    if(depth) delete[] depth;
+    w = width; 
+    h = height;
+    pixels = new uint32_t[w * h];
+    depth = new float[w * h];
+
+    memset(&bmi, 0, sizeof(BITMAPINFO));
+    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth = w;
+    bmi.bmiHeader.biHeight = -h;
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 32;
+    bmi.bmiHeader.biCompression = BI_RGB;
+}
+
+void PixelBuffer::Clear(COLORREF color){
+    uint32_t c = ((color & 0xFF) << 16) | (color & 0xFF00) | ((color & 0xFF0000) >> 16);
+    std::fill_n(pixels, w * h, c);
+    std::fill_n(depth, w * h, 1e9f);
+}
+
+PixelBuffer::~PixelBuffer(){ 
+    delete[] pixels; 
+    delete[] depth; 
+}
+
+/*
+template<typename T>
+std::string_view Formatter::Format(std::string_view label, T value, int precision){
+    // 1. Copy the label into the buffer
+    std::memcpy(buf, label.data(), label.size());
+    
+    // 2. Convert the number directly into the buffer after the label
+    auto [ptr, ec] = std::to_chars(buf + label.size(), buf + sizeof(buf), value, std::chars_format::fixed, precision);
+    
+    // 3. Null-terminate (important if your .write() expects a C-string)
+    *ptr = '\0'; 
+
+    // 4. Return a view of the buffer (zero-copy)
+    return std::string_view(buf, ptr - buf);
+}
+template std::string_view Formatter::Format<double>(std::string_view, double, int);
+template std::string_view Formatter::Format<float>(std::string_view, float, int);
+
+
+std::string_view Formatter::Format(std::string_view label, const vec3D& v){
+    char* curr = buf;
+    char* end = buf + sizeof(buf);
+
+    // 1. Copy the Label (e.g., "Position: ")
+    std::memcpy(curr, label.data(), label.size());
+    curr += label.size();
+
+    // 2. Open Brackets "{x: "
+    std::string_view s1 = "{x: ";
+    std::memcpy(curr, s1.data(), s1.size());
+    curr += s1.size();
+
+    // 3. Convert X
+    auto res = std::to_chars(curr, end, v.x, std::chars_format::fixed, 2);
+    curr = res.ptr;
+
+    // 4. Separator ", y: "
+    std::string_view s2 = ", y: ";
+    std::memcpy(curr, s2.data(), s2.size());
+    curr += s2.size();
+
+    // 5. Convert Y
+    res = std::to_chars(curr, end, v.y, std::chars_format::fixed, 2);
+    curr = res.ptr;
+
+    // 6. Separator ", z: "
+    std::string_view s3 = ", z: ";
+    std::memcpy(curr, s3.data(), s3.size());
+    curr += s3.size();
+
+    // 7. Convert Z
+    res = std::to_chars(curr, end, v.z, std::chars_format::fixed, 2);
+    curr = res.ptr;
+
+    // 8. Closing Bracket "}"
+    *curr++ = '}';
+    *curr = '\0'; // Null terminate for safety
+
+    return std::string_view(buf, curr - buf);
+}*/
