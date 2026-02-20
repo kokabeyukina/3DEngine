@@ -1,5 +1,4 @@
 #include "logic.h"
-#include "tile.h"
 
 mat4x4 mat4x4::inverse(){
 	return {
@@ -33,7 +32,7 @@ vec3D vec3D::normalize() const{
     return *this/sqrtf(x*x + y*y + z*z);
 }
 
-vec3D vec3D::rotate(const vec3D& v) const{
+vec3D vec3D::rotate(const vec3D v) const{
     mat4x4 matRotX = {0}, matRotY = {0}, matRotZ = {0};
 
     matRotX.m[0][0] = 1;
@@ -59,49 +58,19 @@ vec3D vec3D::rotate(const vec3D& v) const{
     return *this * matRotX * matRotY * matRotZ;
 }
 
-/*vec3D vec3D::rotate(const float x, const float y, const float z) const{
-    mat4x4 matRotX = {0}, matRotY = {0}, matRotZ = {0};
-
-    matRotX.m[0][0] = 1;
-    matRotX.m[1][1] =  cosf(x);
-    matRotX.m[1][2] =  sinf(x);
-    matRotX.m[2][1] = -sinf(x);
-    matRotX.m[2][2] =  cosf(x);
-    matRotX.m[3][3] = 1;
-
-    matRotY.m[0][0] =  cosf(y);
-    matRotY.m[0][2] = -sinf(y);
-    matRotY.m[1][1] = 1;
-    matRotY.m[2][0] =  sinf(y);
-    matRotY.m[2][2] =  cosf(y);
-    matRotY.m[3][3] = 1;
-
-    matRotZ.m[0][0] =  cosf(z);
-    matRotZ.m[0][1] =  sinf(z);
-    matRotZ.m[1][0] = -sinf(z);
-    matRotZ.m[1][1] =  cosf(z);
-    matRotZ.m[2][2] = 1;
-    matRotZ.m[3][3] = 1;
-    return *this * matRotX * matRotY * matRotZ;
-}*/
-
-BOOL vec3D::operator==(const vec3D& v) const{
-    return x == v.x && y == v.y && z == v.z;
-}
-
-void vec3D::operator+=(const vec3D& v){
+void vec3D::operator+=(const vec3D v){
     x += v.x;
     y += v.y;
     z += v.z;
 }
 
-void vec3D::operator-=(const vec3D& v){
+void vec3D::operator-=(const vec3D v){
     x -= v.x;
     y -= v.y;
     z -= v.z;
 }
 
-void vec3D::operator*=(const vec3D& v){
+void vec3D::operator*=(const vec3D v){
     x *= v.x;
     y *= v.y;
     z *= v.z;
@@ -119,13 +88,12 @@ void vec3D::operator-=(const float n){
     z -= n;
 }
 
-/*void vec3D::operator/=(const float n){
-    x /= n;
-    y /= n;
-    z /= n;
-}*/
 
-vec3D vec3D::operator+(const vec3D& v) const{
+BOOL vec3D::operator==(const vec3D v) const{
+    return x == v.x && y == v.y && z == v.z;
+}
+
+vec3D vec3D::operator+(const vec3D v) const{
     return {
         x + v.x,
         y + v.y,
@@ -133,7 +101,7 @@ vec3D vec3D::operator+(const vec3D& v) const{
     };
 }
 
-vec3D vec3D::operator-(const vec3D& v) const{
+vec3D vec3D::operator-(const vec3D v) const{
     return {
         x - v.x,
         y - v.y,
@@ -141,11 +109,11 @@ vec3D vec3D::operator-(const vec3D& v) const{
     };
 }
 
-float vec3D::operator*(const vec3D& v) const{
+float vec3D::operator*(const vec3D v) const{
     return x * v.x + y * v.y + z * v.z;
 }
 
-vec3D vec3D::operator%(const vec3D& v) const{
+vec3D vec3D::operator%(const vec3D v) const{
     return {
         y * v.z - z * v.y,
         z * v.x - x * v.z,
@@ -196,65 +164,48 @@ vec3D vec3D::operator*(const mat4x4& m) const{
     };
 }
 
-void vec3D::operator*=(const mat4x4& m){
-    float w = x * m.m[0][3] + y * m.m[1][3] + z * m.m[2][3] + m.m[3][3];
-    if(w == 0.0f){
-        *this = {0, 0, 0};
-        return;
-    }
-    float invW = 1/w;
-    x = (x * m.m[0][0] + y * m.m[1][0] + z * m.m[2][0] + m.m[3][0])*invW;
-    y = (x * m.m[0][1] + y * m.m[1][1] + z * m.m[2][1] + m.m[3][1])*invW;
-    z = (x * m.m[0][2] + y * m.m[1][2] + z * m.m[2][2] + m.m[3][2])*invW;
-}
-
 vec3D::operator std::string() const{
     return std::format("{{x: {}, y: {}, z: {}}}", x, y, z);
 }
 
-void operator<<(std::ostream& os, const vec3D& v){
-    os << (std::string)v;
+COLORREF operator*(const COLORREF color, const vec3D v){
+    int R = static_cast<int>((color & 0xFF) * v.z) & 0xFF;
+    int G = static_cast<int>(((color >> 8) & 0xFF) * v.y) & 0xFF;
+    int B = static_cast<int>(((color >> 16) & 0xFF) * v.x) & 0xFF;
+    return (B << 16) | (G << 8) | R;
 }
 
-void operator*=(COLORREF& color, const vec3D& v){
-    int B = (color >> 16) & 0xff;
-    int G = (color >> 8) & 0xff;
-    int R = color & 0xff;
-    B = (int)(B*v.x) & 0xff; 
-    G = (int)(G*v.y) & 0xff; 
-    R = (int)(R*v.z) & 0xff; 
-    color = (B << 16) | (G << 8) | R;
-}
+triangle::triangle(){};
 
-triangle::triangle(const vec3D& p0, const vec3D& p1, const vec3D& p2, COLORREF c=RGB(255, 255, 255))
+triangle::triangle(const vec3D p0, const vec3D p1, const vec3D p2, COLORREF c)
  : p(p0, p1, p2), color(c){
     n = normal();
 }
 
-triangle::triangle(const vec3D& p0, const vec3D& p1, const vec3D& p2, const vec3D& normal, COLORREF c=RGB(255, 255, 255))
+triangle::triangle(const vec3D p0, const vec3D p1, const vec3D p2, const vec3D normal, COLORREF c)
  : p(p0, p1, p2), n(normal), color(c){}
 
-triangle triangle::rotate(const vec3D& v) const{
+triangle triangle::rotate(const vec3D ang) const{
     mat4x4 matRotX, matRotY, matRotZ;
 
     matRotX.m[0][0] = 1;
-    matRotX.m[1][1] =  cosf(v.x);
-    matRotX.m[1][2] =  sinf(v.x);
-    matRotX.m[2][1] = -sinf(v.x);
-    matRotX.m[2][2] =  cosf(v.x);
+    matRotX.m[1][1] =  cosf(ang.x);
+    matRotX.m[1][2] =  sinf(ang.x);
+    matRotX.m[2][1] = -sinf(ang.x);
+    matRotX.m[2][2] =  cosf(ang.x);
     matRotX.m[3][3] = 1;
 
-    matRotY.m[0][0] =  cosf(v.y);
-    matRotY.m[0][2] = -sinf(v.y);
+    matRotY.m[0][0] =  cosf(ang.y);
+    matRotY.m[0][2] = -sinf(ang.y);
     matRotY.m[1][1] = 1;
-    matRotY.m[2][0] =  sinf(v.y);
-    matRotY.m[2][2] =  cosf(v.y);
+    matRotY.m[2][0] =  sinf(ang.y);
+    matRotY.m[2][2] =  cosf(ang.y);
     matRotY.m[3][3] = 1;
 
-    matRotZ.m[0][0] =  cosf(v.z);
-    matRotZ.m[0][1] =  sinf(v.z);
-    matRotZ.m[1][0] = -sinf(v.z);
-    matRotZ.m[1][1] =  cosf(v.z);
+    matRotZ.m[0][0] =  cosf(ang.z);
+    matRotZ.m[0][1] =  sinf(ang.z);
+    matRotZ.m[1][0] = -sinf(ang.z);
+    matRotZ.m[1][1] =  cosf(ang.z);
     matRotZ.m[2][2] = 1;
     matRotZ.m[3][3] = 1;
     return *this * matRotX * matRotY * matRotZ;
@@ -264,11 +215,7 @@ vec3D triangle::normal() const{
     return ((p[1] - p[0])%(p[2] - p[0])).normalize();
 }
 
-vec3D triangle::normal(const vec3D& v0, const vec3D& v1, const vec3D& v2){
-    return ((v1 - v0)%(v2 - v0)).normalize();
-}
-
-void triangle::operator*=(const vec3D& v){
+void triangle::operator*=(const vec3D v){
     p[0] *= v;
     p[1] *= v;
     p[2] *= v;
@@ -286,16 +233,7 @@ void triangle::operator-=(const float n){
     p[2] -= n;
 }
 
-triangle triangle::operator+(const float num) const{
-    return {
-        p[0] + num,
-        p[1] + num,
-        p[2] + num,
-        n, color
-    };
-}
-
-triangle triangle::operator+(const vec3D& v) const{
+triangle triangle::operator+(const vec3D v) const{
     return {
         p[0] + v,
         p[1] + v,
@@ -304,11 +242,20 @@ triangle triangle::operator+(const vec3D& v) const{
     };
 }
 
-triangle triangle::operator-(const vec3D& v) const{
+triangle triangle::operator-(const vec3D v) const{
     return {
         p[0] - v,
         p[1] - v,
         p[2] - v,
+        n, color
+    };
+}
+
+triangle triangle::operator+(const float num) const{
+    return {
+        p[0] + num,
+        p[1] + num,
+        p[2] + num,
         n, color
     };
 }
@@ -322,17 +269,11 @@ triangle triangle::operator*(const mat4x4& m) const{
     };
 }
 
-void operator<<(std::ostream& os, const triangle& t){
-    os << (std::string)t;
-}
-
 triangle::operator std::string() const{
     return std::format("{{\n   0: {},\n   1: {},\n   2: {}\n}}", (std::string)p[0], (std::string)p[1], (std::string)p[2]);
 }
 
-cube::cube(float edge) : a(edge){
-    r = a/2;
-
+cube::cube(float edge) : a(edge), r(edge/2){
     int triangleIndex = 0;
     for(int i = 0; i < 6; i++){
         int axis = i / 2;
@@ -357,36 +298,23 @@ cube::cube(float edge) : a(edge){
         }
     }
     /*// EAST
-    m[0] =  {vec3D{ r, -r, -r}, vec3D{ r,  r, -r}, vec3D{ r,  r,  r}};
-    m[1] =  {vec3D{ r, -r, -r}, vec3D{ r,  r,  r}, vec3D{ r, -r,  r}};
+    m[0] =  {{ r, -r, -r}, { r,  r, -r}, { r,  r,  r}};
+    m[1] =  {{ r, -r, -r}, { r,  r,  r}, { r, -r,  r}};
     // WEST
-    m[2] =  {vec3D{-r, -r,  r}, vec3D{-r,  r,  r}, vec3D{-r,  r, -r}};
-    m[3] =  {vec3D{-r, -r,  r}, vec3D{-r,  r, -r}, vec3D{-r, -r, -r}};
+    m[2] =  {{-r, -r,  r}, {-r,  r,  r}, {-r,  r, -r}};
+    m[3] =  {{-r, -r,  r}, {-r,  r, -r}, {-r, -r, -r}};
     // TOP
-    m[4] =  {vec3D{ r, -r,  r}, vec3D{-r, -r,  r}, vec3D{-r, -r, -r}};
-    m[5] =  {vec3D{ r, -r,  r}, vec3D{-r, -r, -r}, vec3D{ r, -r, -r}};
+    m[4] =  {{ r, -r,  r}, {-r, -r,  r}, {-r, -r, -r}};
+    m[5] =  {{ r, -r,  r}, {-r, -r, -r}, { r, -r, -r}};
     //BOTTOM
-    m[6] =  {vec3D{-r,  r, -r}, vec3D{-r,  r,  r}, vec3D{ r,  r,  r}};
-    m[7] =  {vec3D{-r,  r, -r}, vec3D{ r,  r,  r}, vec3D{ r,  r, -r}};
+    m[6] =  {{-r,  r, -r}, {-r,  r,  r}, { r,  r,  r}};
+    m[7] =  {{-r,  r, -r}, { r,  r,  r}, { r,  r, -r}};
     // NORTH
-    m[8] =  {vec3D{ r, -r,  r}, vec3D{ r,  r,  r}, vec3D{-r,  r,  r}};
-    m[9] =  {vec3D{ r, -r,  r}, vec3D{-r,  r,  r}, vec3D{-r, -r,  r}};
+    m[8] =  {{ r, -r,  r}, { r,  r,  r}, {-r,  r,  r}};
+    m[9] =  {{ r, -r,  r}, {-r,  r,  r}, {-r, -r,  r}};
     // SOUTH
-    m[10] = {vec3D{-r, -r, -r}, vec3D{-r,  r, -r}, vec3D{ r,  r, -r}};
-    m[11] = {vec3D{-r, -r, -r}, vec3D{ r,  r, -r}, vec3D{ r, -r, -r}};*/
-}
-
-void FormatFileInput(int argc, wchar_t* args[], std::function<void(std::ifstream&)> func){
-    for(int i = 1; i < argc; i++){
-        wprintf(L"Argument: %ls\n", args[i]);
-        std::ifstream file(args[i]);
-        if(file.is_open()){
-            func(file);
-            file.close();
-        }else{
-            std::cout << "Argument is not file.\n";
-        }
-    }
+    m[10] = {{-r, -r, -r}, {-r,  r, -r}, { r,  r, -r}};
+    m[11] = {{-r, -r, -r}, { r,  r, -r}, { r, -r, -r}};*/
 }
 
 void FormatFileInput(LPSTR lpCmdLine, std::function<void(std::string, std::string, vec3D)> func){
@@ -517,12 +445,10 @@ mesh ObjToMesh(std::string obj, std::string mtl, vec3D pos){
     file.close();
     return rMesh;
 }
+
 mesh ObjToMeshC(std::string obj, std::string mtl, vec3D pos) {
     mesh rMesh;
     std::vector<vec3D> tempVerts;
-    
-    //tempVerts.reserve(50000); 
-    //rMesh.tris.reserve(100000);
 
     FILE* file = fopen(obj.c_str(), "r");
     if (!file) return rMesh;
@@ -598,7 +524,7 @@ std::map<std::string, COLORREF> LoadMaterials(std::string filename){
 
         if(key == "newmtl"){
             ss >> currentMtlName;
-        }else if(key == "Kd"){ // Diffuse color (RGB floats 0.0 - 1.0)
+        }else if(key == "Kd"){ // Diffuse color 0.0 ~ 1.0
             float r, g, b;
             ss >> r >> g >> b;
             materials[currentMtlName] = RGB((int)(r * 255), (int)(g * 255), (int)(b * 255));
@@ -606,22 +532,6 @@ std::map<std::string, COLORREF> LoadMaterials(std::string filename){
     }
     file.close();
     return materials;
-}
-
-void ReadFile(std::ifstream& file){
-    std::string data;
-    int totalLines = 0;
-    while(std::getline(file, data)){
-        totalLines++;
-    }
-    file.clear();
-    file.seekg(0);
-    int line = 1;
-    int width = std::log10(totalLines)+1;
-    while(std::getline(file, data)){
-        std::cout << std::right << std::setw(width) << line << " | " << data << std::endl;
-        line++;
-    }
 }
 
 void PixelBuffer::Resize(int width, int height){
@@ -651,64 +561,3 @@ PixelBuffer::~PixelBuffer(){
     delete[] pixels; 
     delete[] depth; 
 }
-
-/*
-template<typename T>
-std::string_view Formatter::Format(std::string_view label, T value, int precision){
-    // 1. Copy the label into the buffer
-    std::memcpy(buf, label.data(), label.size());
-    
-    // 2. Convert the number directly into the buffer after the label
-    auto [ptr, ec] = std::to_chars(buf + label.size(), buf + sizeof(buf), value, std::chars_format::fixed, precision);
-    
-    // 3. Null-terminate (important if your .write() expects a C-string)
-    *ptr = '\0'; 
-
-    // 4. Return a view of the buffer (zero-copy)
-    return std::string_view(buf, ptr - buf);
-}
-template std::string_view Formatter::Format<double>(std::string_view, double, int);
-template std::string_view Formatter::Format<float>(std::string_view, float, int);
-
-
-std::string_view Formatter::Format(std::string_view label, const vec3D& v){
-    char* curr = buf;
-    char* end = buf + sizeof(buf);
-
-    // 1. Copy the Label (e.g., "Position: ")
-    std::memcpy(curr, label.data(), label.size());
-    curr += label.size();
-
-    // 2. Open Brackets "{x: "
-    std::string_view s1 = "{x: ";
-    std::memcpy(curr, s1.data(), s1.size());
-    curr += s1.size();
-
-    // 3. Convert X
-    auto res = std::to_chars(curr, end, v.x, std::chars_format::fixed, 2);
-    curr = res.ptr;
-
-    // 4. Separator ", y: "
-    std::string_view s2 = ", y: ";
-    std::memcpy(curr, s2.data(), s2.size());
-    curr += s2.size();
-
-    // 5. Convert Y
-    res = std::to_chars(curr, end, v.y, std::chars_format::fixed, 2);
-    curr = res.ptr;
-
-    // 6. Separator ", z: "
-    std::string_view s3 = ", z: ";
-    std::memcpy(curr, s3.data(), s3.size());
-    curr += s3.size();
-
-    // 7. Convert Z
-    res = std::to_chars(curr, end, v.z, std::chars_format::fixed, 2);
-    curr = res.ptr;
-
-    // 8. Closing Bracket "}"
-    *curr++ = '}';
-    *curr = '\0'; // Null terminate for safety
-
-    return std::string_view(buf, curr - buf);
-}*/

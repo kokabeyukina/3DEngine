@@ -1,12 +1,6 @@
 #include "window.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR lpCmdLine, int nCmdShow){
-    //int argc;
-    //LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    //for(int i = 0; i < argc; i++){
-    //    std::wcout << argv[i] << "\n";
-    //}
-    
     Window window(hInstance, nCmdShow, ((std::string)lpCmdLine).find("-noGL") == std::string::npos);
 
     if(((std::string)lpCmdLine).find(".obj") != std::string::npos){
@@ -14,7 +8,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR lpCmd
             window.cam.meshes.push_back(ObjToMeshC(file, mtl, pos));
         });
 
-        std::map<std::tuple<int, int, int>, COLORREF> worldMap;
+        /*std::map<std::tuple<int, int, int>, COLORREF> worldMap;
 
         Tile::PushTileSection(worldMap, {-15, 4, -15}, {15, 4, 15}, RGB(255, 255, 255));
 
@@ -22,12 +16,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR lpCmd
         Tile::PushTileSection(worldMap, {-3, -3, -3}, {-3, 3, -3}, RGB(0, 255, 0));
         Tile::PushTileSection(worldMap, {-3,  3, -3}, {-3, 3,  3}, RGB(0, 0, 255));
 
-        Tile::CreateTiles(window.cam.tiles, worldMap);
+        Tile::CreateTiles(window.cam.tiles, worldMap);*/
     }else{
         std::map<std::tuple<int, int, int>, COLORREF> worldMap;
 
         //floor
-        Tile::PushTileSection(worldMap, {-20, 4, -20}, {20, 4, 20}, RGB(255, 255, 255));
+        Tile::PushTileSection(worldMap, {-22, 4, -22}, {22, 4, 22}, RGB(255, 255, 255));
 
         //U
         Tile::PushTileSection(worldMap, {-20, -1, 20}, {-20, 3, 20}, RGB(90, 90, 90));

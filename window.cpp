@@ -1,8 +1,6 @@
 #include "window.h"
 
 Window::Window(HINSTANCE hInstance, int nCmdShow, bool GL, int w, int h) : hInstance(hInstance), usingGL(GL){
-    //this->hInstance = hInstance;
-    //usingGL = GL;
     className = L"MainWindow";
     
     if(w && h){
@@ -29,7 +27,7 @@ Window::Window(HINSTANCE hInstance, int nCmdShow, bool GL, int w, int h) : hInst
     ShowWindow(hwnd, nCmdShow);
     UpdateWindow(hwnd);
 
-    setFPSLimit();
+    SetFPSLimit();
 
     cam.BackGround = RGB(30, 30, 30);
     hMainFont = CreateFontW(
@@ -71,7 +69,7 @@ Window::Window(HINSTANCE hInstance, int nCmdShow, bool GL, int w, int h) : hInst
     wglMakeCurrent(hdcGL, hRC);
     SelectObject(hdcGL, hMainFont);
     cam.fontBase = glGenLists(96);
-    wglUseFontBitmaps(hdcGL, 32, 96, cam.fontBase);
+    wglUseFontBitmapsW(hdcGL, 32, 96, cam.fontBase);
 }
 
 void Window::RegisterWindowClass(){
@@ -96,13 +94,6 @@ void Window::RegisterWindowClass(){
 }
 
 void Window::MainLoop(){
-    auto drawer = usingGL ? [](Window& w){
-        w.cam.DrawFrameGL(); 
-        w.cam.WriteGL(10, 30, "FPS: "+std::to_string(w.fps));
-        SwapBuffers(w.cam.hdc);
-    } : [](Window& w){
-        InvalidateRect(w.hwnd, NULL, FALSE); 
-    };
     if(usingGL){
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
@@ -115,6 +106,20 @@ void Window::MainLoop(){
             1.0f
         );
     }
+
+    auto drawer = usingGL ? [](Window& w){
+        w.cam.DrawFrameGL(); 
+        w.cam.BeginText();
+        w.cam.WriteGL(10, 30, "FPS: "+std::to_string(w.fps));
+        w.cam.WriteGL(10, 55, "Position: "+(std::string)w.cam.position);
+        w.cam.WriteGL(10, 80, "Angle: "+(std::string)w.cam.lookDir);
+        w.cam.WriteGL(10, 105, "Light: "+(std::string)w.cam.lightDir);
+        w.cam.EndText();
+        SwapBuffers(w.cam.hdc);
+    } : [](Window& w){
+        InvalidateRect(w.hwnd, NULL, FALSE); 
+    };
+
     auto lastFrameTime = std::chrono::high_resolution_clock::now();
     while(true){
         if(PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)){
@@ -129,13 +134,12 @@ void Window::MainLoop(){
             if(deltaTime >= maxMsPerFrame){
                 fps = 1000.0/deltaTime;
                 lastFrameTime = currentTime;
-                OnUpdate();
+                cam.Move(keyStates, deltaTime);
                 drawer(*this);
             }
         }
     }
 }
-
 
 LRESULT Window::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
     Window* thisPtr;
@@ -181,11 +185,6 @@ LRESULT Window::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
             );
 
             thisPtr->cam.hdc = hdc;
-            //thisPtr->cam.Write(10, 10, Formatter::Format("FPS: ", thisPtr->fps), RGB(255, 255, 255), thisPtr->hMainFont);
-            //thisPtr->cam.Write(10, 35, Formatter::Format("Position: ", thisPtr->cam.position), RGB(255, 255, 255), thisPtr->hMainFont);
-            //thisPtr->cam.Write(10, 60, Formatter::Format("Angle: ", thisPtr->cam.lookDir), RGB(255, 255, 255), thisPtr->hMainFont);
-            //thisPtr->cam.Write(10, 85, Formatter::Format("Light: ", thisPtr->cam.lightDir), RGB(255, 255, 255), thisPtr->hMainFont);
-            
             thisPtr->cam.Write(10, 10, "FPS: "+std::to_string(thisPtr->fps), RGB(255, 255, 255), thisPtr->hMainFont);
             thisPtr->cam.Write(10, 35, "Position: "+(std::string)thisPtr->cam.position, RGB(255, 255, 255), thisPtr->hMainFont);
             thisPtr->cam.Write(10, 60, "Angle: "+(std::string)thisPtr->cam.lookDir, RGB(255, 255, 255), thisPtr->hMainFont);
@@ -234,7 +233,7 @@ LRESULT Window::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 
             if(xPos == centerX && yPos == centerY) break;
 
-            thisPtr->cam.lookAt(yPos - centerY, xPos - centerX);
+            thisPtr->cam.LookAt(yPos - centerY, xPos - centerX);
 
             POINT pt = {centerX, centerY};
             ClientToScreen(hwnd, &pt);
@@ -328,7 +327,7 @@ LRESULT Window::WndProcGL(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 
             if(xPos == centerX && yPos == centerY) break;
 
-            thisPtr->cam.lookAt(yPos - centerY, xPos - centerX);
+            thisPtr->cam.LookAt(yPos - centerY, xPos - centerX);
 
             POINT pt = {centerX, centerY};
             ClientToScreen(hwnd, &pt);
@@ -340,10 +339,6 @@ LRESULT Window::WndProcGL(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
             return DefWindowProcW(hwnd, msg, wParam, lParam);
     }
     return 0;
-}
-
-void Window::OnUpdate(){
-    cam.move(keyStates, deltaTime);
 }
 
 void Window::TrapCursor(HWND hwnd){
@@ -359,13 +354,23 @@ void Window::ReleaseCursor(){
     ClipCursor(NULL);
 }
 
-void Window::setFPSLimit(float targetFPS){
+void Window::SetFPSLimit(float targetFPS){
     maxMsPerFrame = 1000.0 / targetFPS;
 }
 
 Window::~Window(){
     ReleaseCursor();
 
+    if(hRC){
+        wglMakeCurrent(NULL, NULL);
+        wglDeleteContext(hRC);
+        hRC = NULL;
+    }
+    if(hdcGL){
+        ReleaseDC(hwnd, hdcGL);
+        hdcGL = NULL;
+    }
+    
     if(hMainFont){
         DeleteObject(hMainFont);
         hMainFont = NULL;

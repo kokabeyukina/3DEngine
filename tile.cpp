@@ -1,6 +1,18 @@
 #include "tile.h"
 
-Tile::Tile(vec3D pos, COLORREF col, vec3D ang) : position(pos), angle(ang), color(col){}
+Tile::Tile(vec3D pos, COLORREF col, vec3D ang)
+ : position(pos), angle(ang), color(col), faces(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE){}
+
+void Tile::PushTileSection(std::map<std::tuple<int, int, int>, COLORREF> &worldMap, vec3D initPos, vec3D finalPos, COLORREF color){
+    for(int x = initPos.x; x <= finalPos.x; x++)
+    for(int y = initPos.y; y <= finalPos.y; y++)
+    for(int z = initPos.z; z <= finalPos.z; z++){
+        // First block placed stays
+        worldMap.insert({{x, y, z}, color});
+        // for overwrite, use this instead:
+        //worldMap[{x, y, z}] = color;
+    }
+}
 
 void Tile::CreateTiles(std::vector<Tile> &tilesPV, std::map<std::tuple<int, int, int>, COLORREF> &worldMap){
     tilesPV.clear();
@@ -16,9 +28,9 @@ void Tile::CreateTiles(std::vector<Tile> &tilesPV, std::map<std::tuple<int, int,
         auto [x, y, z] = pos;
 
         Tile tile({
-            (float)x * unityCube.a, 
-            (float)y * unityCube.a, 
-            (float)z * unityCube.a
+            (float)x * UNITY_CUBE.a, 
+            (float)y * UNITY_CUBE.a, 
+            (float)z * UNITY_CUBE.a
         }, color);
 
         for(int i = 0; i < 6; i++){
@@ -32,23 +44,7 @@ void Tile::CreateTiles(std::vector<Tile> &tilesPV, std::map<std::tuple<int, int,
     }
 }
 
-void Tile::PushTileSection(std::map<std::tuple<int, int, int>, COLORREF> &worldMap, vec3D initPos, vec3D finalPos, COLORREF color){
-    for(int x = initPos.x; x <= finalPos.x; x++)
-    for(int y = initPos.y; y <= finalPos.y; y++)
-    for(int z = initPos.z; z <= finalPos.z; z++){
-
-        // First block placed stays
-        worldMap.insert({{x, y, z}, color});
-        // for overwrite, use this instead:
-        //worldMap[{x, y, z}] = color;
-    }
-}
-
 Tile::operator std::string() const{
     return std::format("{{\n   position: {},\n   angle: {},\n   color: {{{}, {}, {}}}\n}}", 
         (std::string)position, (std::string)angle, (color & 0xff), ((color >> 8) & 0xff), ((color >> 16) & 0xff));
 }
-
-void operator<<(std::ostream& os, Tile t){
-    os << (std::string)t;
-};

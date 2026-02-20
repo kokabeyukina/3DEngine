@@ -15,20 +15,20 @@ private:
     mat4x4 matProj;
     mat4x4 matView;
 
-
     float normalPace;
     float speedyPace;
     float sensiblity;
     float lightAng;
 
     std::vector<triangle> vecTrianglesToRaster;
+
     static mat4x4 MatPointAt(vec3D pos, vec3D target, vec3D up);
+    //Draws the triangles pixel by pixel based on the distance from the camera
     void RasterizeTriangle(const triangle& tri, PixelBuffer& buf, int stripTop, int stripBottom);
-    void Project(std::vector<triangle> &vecTrianglesToRaster, triangle& tri, vec3D pos, vec3D ang, COLORREF color);
-    //void Project(std::vector<triangle> &vecTrianglesToRaster, mesh mesh, vec3D pos, vec3D ang);
-    //void Project(std::vector<triangle> &vecTrianglesToRaster, Tile tile);
-    inline static vec3D VectorIntersectPlane(vec3D &plane_p, vec3D &plane_n, vec3D &lineStart, vec3D &lineEnd);
-    static int TriangleClipAgainstPlane(vec3D plane_p, vec3D plane_n, triangle &in_tri, triangle &out_tri1, triangle &out_tri2);
+    //
+    void Project(std::vector<triangle>& vecTrianglesToRaster, const triangle& tri, vec3D pos, vec3D ang, COLORREF color);
+    static int TriangleClipAgainstPlane(vec3D plane_p, vec3D plane_n, triangle& in_tri, triangle& out_tri1, triangle& out_tri2);
+    static vec3D VectorIntersectPlane(vec3D plane_p, vec3D plane_n, vec3D lineStart, vec3D lineEnd);
 
 public:
     HDC hdc;
@@ -56,11 +56,11 @@ public:
     void DrawFrame(PixelBuffer& pb);
     void DrawFrameGL();
     void Write(int x, int y, std::string text, COLORREF color, HFONT font);
-    void Write(int x, int y, std::string_view text, COLORREF color, HFONT font);
+    void BeginText();
     void WriteGL(float x, float y, std::string text);
-    void move(std::map<int, bool> keyStates, double elapsedTime);
-    void lookAt(int x, int y);
-
-    //~Camera();
+    void EndText();
+    void Move(std::map<int, bool>& keyStates, double elapsedTime);
+    void LookAt(int x, int y);
+    ~Camera();
 };
 

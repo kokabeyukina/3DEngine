@@ -28,7 +28,6 @@ private:
     void RegisterWindowClass();
     static LRESULT WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     static LRESULT WndProcGL(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-    void OnUpdate();
     static void TrapCursor(HWND hwnd);
     static void ReleaseCursor();
 
@@ -39,6 +38,6 @@ public:
     //Window constructor. Set w and h to 0 for fullscreen
     Window(HINSTANCE hInstance, int nCmdShow, bool GL=true, int w=0, int h=0);
     void MainLoop();
-    void setFPSLimit(float targetFPS=165.0f);
+    void SetFPSLimit(float targetFPS=165.0f);
     ~Window();
 };

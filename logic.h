@@ -29,29 +29,29 @@ struct vec3D{
     float x, y, z;
 
     //float len() const;
+
     vec3D normalize() const;
-    vec3D rotate(const vec3D& v) const;
-    //vec3D rotate(const float x, const float y, const float z) const;
-    BOOL operator==(const vec3D& v) const;
-    void operator+=(const vec3D& v);
-    void operator-=(const vec3D& v);
-    void operator*=(const vec3D& v);
+    vec3D rotate(const vec3D v) const;
+
+    void operator+=(const vec3D v);
+    void operator-=(const vec3D v);
+    void operator*=(const vec3D v);
     void operator+=(const float n);
     void operator-=(const float n);
-    //void operator/=(const float n);
-    vec3D operator+(const vec3D& v) const;
-    vec3D operator-(const vec3D& v) const;
-    float operator*(const vec3D& v) const;
-    vec3D operator%(const vec3D& v) const;
+
+    BOOL operator==(const vec3D v) const;
+    vec3D operator+(const vec3D v) const;
+    vec3D operator-(const vec3D v) const;
+    float operator*(const vec3D v) const; //Vector dot product
+    vec3D operator%(const vec3D v) const; //Vector cross product
     vec3D operator+(const float n) const;
     vec3D operator-(const float n) const;
     vec3D operator*(const float n) const;
     vec3D operator/(const float n) const;
     vec3D operator*(const mat4x4& m) const;
-    void operator*=(const mat4x4& m);
+
     operator std::string() const;
-    friend void operator<<(std::ostream& os, const vec3D& v);
-    friend void operator*=(COLORREF& color, const vec3D& v);
+    friend COLORREF operator*(const COLORREF color, const vec3D v);
 };
 
 struct triangle{
@@ -59,20 +59,23 @@ struct triangle{
     vec3D n;
     COLORREF color;
 
-    triangle(){};
-    triangle(const vec3D& p0, const vec3D& p1, const vec3D& p2, COLORREF c);
-    triangle(const vec3D& p0, const vec3D& p1, const vec3D& p2, const vec3D& normal, COLORREF c);
-    triangle rotate(const vec3D& v) const;
+    triangle();
+    //The normal is calculated in the constructor
+    triangle(const vec3D p0, const vec3D p1, const vec3D p2, COLORREF c=RGB(255, 255, 255));
+    //Passes the given normal
+    triangle(const vec3D p0, const vec3D p1, const vec3D p2, const vec3D normal, COLORREF c=RGB(255, 255, 255));
+    triangle rotate(const vec3D ang) const;
     vec3D normal() const;
-    static vec3D normal(const vec3D& v0, const vec3D& v1, const vec3D& v2);
-    void operator*=(const vec3D& v);
+
+    void operator*=(const vec3D v);
     void operator+=(const float n);
     void operator-=(const float n);
+
+    triangle operator+(const vec3D v) const;
+    triangle operator-(const vec3D v) const;
     triangle operator+(const float n) const;
-    triangle operator+(const vec3D& v) const;
-    triangle operator-(const vec3D& v) const;
     triangle operator*(const mat4x4& m) const;
-    friend void operator<<(std::ostream& os, const triangle& t);
+    
     operator std::string() const;
 };
 
@@ -80,6 +83,7 @@ struct mesh{
     std::vector<triangle> tris;
 };
 
+//Creates a basic cube mesh used for the Tile class
 struct cube{
     float a;
     float r;
@@ -88,13 +92,22 @@ struct cube{
     cube(float edge=1.0f);
 };
 
-void FormatFileInput(int argc, wchar_t* args[], std::function<void(std::ifstream&)> func);
+//Formats the command line 
 void FormatFileInput(LPSTR lpCmdLine, std::function<void(std::string, std::string, vec3D)> func);
 bool ParseVector(const std::string& input, vec3D& outPos);
+//Converts obj file to mesh class
 mesh ObjToMesh(std::string file, std::string mtl="", vec3D pos={0,0,0});
+//Faster version of ObjToMesh
 mesh ObjToMeshC(std::string file, std::string mtl="", vec3D pos={0,0,0});
+//Loads materials from mtl file
 std::map<std::string, COLORREF> LoadMaterials(std::string filename);
 
+struct screenTri{ 
+    int x, y; 
+    float z; 
+};
+
+//Keeps the color and depth data of every pixel on the screen
 struct PixelBuffer{
     uint32_t* pixels = nullptr;
     float* depth = nullptr;
@@ -105,11 +118,3 @@ struct PixelBuffer{
     void Clear(COLORREF color);
     ~PixelBuffer();
 };
-
-/*struct Formatter{
-    static inline char buf[256];
-
-    template<typename T>
-    static std::string_view Format(std::string_view label, T value, int precision=2);
-    static std::string_view Format(std::string_view label, const vec3D& v);
-};*/
