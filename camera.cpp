@@ -42,18 +42,6 @@ void Camera::ChangeLightDir(vec3D direction){
     lightDir = lightDir.normalize();
 }
 
-void Camera::Write(int x, int y, std::string text, COLORREF color, HFONT font){
-    std::wstring wtext(text.begin(), text.end()); 
-
-    SetTextColor(hdc, color);
-    SetBkMode(hdc, TRANSPARENT);
-
-    HFONT hOldFont = (HFONT)SelectObject(hdc, font);
-    
-    TextOutW(hdc, x, y, wtext.c_str(), (int)wtext.length());
-    SelectObject(hdc, hOldFont);
-}
-
 mat4x4 Camera::MatPointAt(vec3D pos, vec3D target, vec3D up){
     vec3D newForward = (target - pos).normalize();
     vec3D newUp = (up - newForward * (up * newForward)).normalize();
@@ -188,20 +176,6 @@ void Camera::RasterizeTriangle(const triangle& tri, PixelBuffer& pb, int stripTo
                 pb.pixels[idx] = color;
             }
         }
-        //little faster aproach
-        /*int startX = std::max(0, xa);
-        if(xa == xb) continue;
-        float zStep = (zb - za) / (float)(xb - xa);
-        float currentZ = za + (startX - xa) * zStep;
-
-        int rowOffset = y * pb.w;
-        for (int x = startX; x <= std::min(pb.w - 1, xb); x++) {
-            if (currentZ < pb.depth[rowOffset + x]) {
-                pb.depth[rowOffset + x] = currentZ;
-                pb.pixels[rowOffset + x] = color;
-            }
-            currentZ += zStep;
-        }*/
     }
 }
 
@@ -267,7 +241,19 @@ void Camera::DrawFrameGL(){
     glDisable(GL_LIGHTING);
 }
 
-void Camera::BeginText(){
+void Camera::Write(HDC hdc, int x, int y, std::string text, COLORREF color, HFONT font){
+    std::wstring wtext(text.begin(), text.end()); 
+
+    SetTextColor(hdc, color);
+    SetBkMode(hdc, TRANSPARENT);
+
+    HFONT hOldFont = (HFONT)SelectObject(hdc, font);
+    
+    TextOutW(hdc, x, y, wtext.c_str(), (int)wtext.length());
+    SelectObject(hdc, hOldFont);
+}
+
+void Camera::BeginTextGL(){
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
@@ -283,13 +269,13 @@ void Camera::BeginText(){
     glListBase(fontBase - 32);
 }
 
-void Camera::WriteGL(float x, float y, std::string text) {
+void Camera::WriteGL(float x, float y, std::string text){
     glColor3f(1.0f, 1.0f, 1.0f);
     glRasterPos2f(x, screenHeight - y);
     glCallLists((GLsizei)text.length(), GL_UNSIGNED_BYTE, text.c_str());
 }
 
-void Camera::EndText() {
+void Camera::EndTextGL(){
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
     glMatrixMode(GL_PROJECTION);

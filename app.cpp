@@ -7,16 +7,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR lpCmd
         FormatFileInput(lpCmdLine, [&window](std::string file, std::string mtl, vec3D pos){
             window.cam.meshes.push_back(ObjToMeshC(file, mtl, pos));
         });
-
-        /*std::map<std::tuple<int, int, int>, COLORREF> worldMap;
-
-        Tile::PushTileSection(worldMap, {-15, 4, -15}, {15, 4, 15}, RGB(255, 255, 255));
-
-        Tile::PushTileSection(worldMap, {-3,  3, -3}, { 3, 3, -3}, RGB(255, 0, 0));
-        Tile::PushTileSection(worldMap, {-3, -3, -3}, {-3, 3, -3}, RGB(0, 255, 0));
-        Tile::PushTileSection(worldMap, {-3,  3, -3}, {-3, 3,  3}, RGB(0, 0, 255));
-
-        Tile::CreateTiles(window.cam.tiles, worldMap);*/
     }else{
         std::map<std::tuple<int, int, int>, COLORREF> worldMap;
 

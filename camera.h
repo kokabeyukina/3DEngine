@@ -19,20 +19,20 @@ private:
     float speedyPace;
     float sensiblity;
     float lightAng;
+    float fov;
 
     std::vector<triangle> vecTrianglesToRaster;
 
     static mat4x4 MatPointAt(vec3D pos, vec3D target, vec3D up);
     //Draws the triangles pixel by pixel based on the distance from the camera
     void RasterizeTriangle(const triangle& tri, PixelBuffer& buf, int stripTop, int stripBottom);
-    //
+    //Converts 3d models to a 2d shape
     void Project(std::vector<triangle>& vecTrianglesToRaster, const triangle& tri, vec3D pos, vec3D ang, COLORREF color);
+    //Hides triangles behind the camera
     static int TriangleClipAgainstPlane(vec3D plane_p, vec3D plane_n, triangle& in_tri, triangle& out_tri1, triangle& out_tri2);
     static vec3D VectorIntersectPlane(vec3D plane_p, vec3D plane_n, vec3D lineStart, vec3D lineEnd);
 
 public:
-    HDC hdc;
-
     vec3D lookDir;
     vec3D position;
     vec3D lightDir;
@@ -41,8 +41,6 @@ public:
 
     int screenWidth; 
     int screenHeight;
-
-    float fov;
     float zNear;
 
     std::vector<Tile> tiles;
@@ -55,10 +53,10 @@ public:
     void ChangeLightDir(vec3D direction);
     void DrawFrame(PixelBuffer& pb);
     void DrawFrameGL();
-    void Write(int x, int y, std::string text, COLORREF color, HFONT font);
-    void BeginText();
+    void Write(HDC hdc, int x, int y, std::string text, COLORREF color, HFONT font);
+    void BeginTextGL();
     void WriteGL(float x, float y, std::string text);
-    void EndText();
+    void EndTextGL();
     void Move(std::map<int, bool>& keyStates, double elapsedTime);
     void LookAt(int x, int y);
     ~Camera();

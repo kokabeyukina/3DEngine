@@ -363,7 +363,7 @@ void FormatFileInput(LPSTR lpCmdLine, std::function<void(std::string, std::strin
     for(auto [obj, params] : objs){
         auto [mtl, pos] = params;
         func(obj, mtl, pos);
-        std::cout << obj << ": " << mtl << ", " << (std::string)pos << "\n";
+        //std::cout << obj << ": " << mtl << ", " << (std::string)pos << "\n";
     }
 }
 

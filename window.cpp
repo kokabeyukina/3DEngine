@@ -17,6 +17,8 @@ Window::Window(HINSTANCE hInstance, int nCmdShow, bool GL, int w, int h) : hInst
     cam.UpdateScreenSize(width, height);
     cam.ChangeLightDir({sin(0.0f), -0.5f, -cos(0.0f)});
 
+    SetFPSLimit();
+
     RegisterWindowClass();
     hwnd = CreateWindowExW(
         0, className, L"3D Engine B1.0",
@@ -27,8 +29,6 @@ Window::Window(HINSTANCE hInstance, int nCmdShow, bool GL, int w, int h) : hInst
     ShowWindow(hwnd, nCmdShow);
     UpdateWindow(hwnd);
 
-    SetFPSLimit();
-
     cam.BackGround = RGB(30, 30, 30);
     hMainFont = CreateFontW(
         23, 0, 0, 0, 
@@ -37,11 +37,9 @@ Window::Window(HINSTANCE hInstance, int nCmdShow, bool GL, int w, int h) : hInst
         CLEARTYPE_QUALITY, VARIABLE_PITCH, L"Consolas"
     );
 
-
     if(!usingGL) return;
 
     hdcGL = GetDC(hwnd);
-    cam.hdc = hdcGL;
 
     PIXELFORMATDESCRIPTOR pfd = {
         sizeof(PIXELFORMATDESCRIPTOR), 1,
@@ -49,9 +47,9 @@ Window::Window(HINSTANCE hInstance, int nCmdShow, bool GL, int w, int h) : hInst
         PFD_TYPE_RGBA, 32,
         0, 0, 0, 0, 0, 0, 0, 0, 
         0, 0, 0, 0, 0, 
-        24, // 24-bit Z-Buffer (Depth)
-        8,  // Stencil Buffer
-        0, PFD_MAIN_PLANE, 0, 0, 0, 0
+        24, 8, 0, 
+        PFD_MAIN_PLANE, 0, 
+        0, 0, 0
     };
 
     int pixelFormat = ChoosePixelFormat(hdcGL, &pfd);
@@ -109,13 +107,13 @@ void Window::MainLoop(){
 
     auto drawer = usingGL ? [](Window& w){
         w.cam.DrawFrameGL(); 
-        w.cam.BeginText();
+        w.cam.BeginTextGL();
         w.cam.WriteGL(10, 30, "FPS: "+std::to_string(w.fps));
         w.cam.WriteGL(10, 55, "Position: "+(std::string)w.cam.position);
         w.cam.WriteGL(10, 80, "Angle: "+(std::string)w.cam.lookDir);
         w.cam.WriteGL(10, 105, "Light: "+(std::string)w.cam.lightDir);
-        w.cam.EndText();
-        SwapBuffers(w.cam.hdc);
+        w.cam.EndTextGL();
+        SwapBuffers(w.hdcGL);
     } : [](Window& w){
         InvalidateRect(w.hwnd, NULL, FALSE); 
     };
@@ -184,11 +182,10 @@ LRESULT Window::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
                 thisPtr->pb.pixels, &thisPtr->pb.bmi, DIB_RGB_COLORS, SRCCOPY
             );
 
-            thisPtr->cam.hdc = hdc;
-            thisPtr->cam.Write(10, 10, "FPS: "+std::to_string(thisPtr->fps), RGB(255, 255, 255), thisPtr->hMainFont);
-            thisPtr->cam.Write(10, 35, "Position: "+(std::string)thisPtr->cam.position, RGB(255, 255, 255), thisPtr->hMainFont);
-            thisPtr->cam.Write(10, 60, "Angle: "+(std::string)thisPtr->cam.lookDir, RGB(255, 255, 255), thisPtr->hMainFont);
-            thisPtr->cam.Write(10, 85, "Light: "+(std::string)thisPtr->cam.lightDir, RGB(255, 255, 255), thisPtr->hMainFont);
+            thisPtr->cam.Write(hdc, 10, 10, "FPS: "+std::to_string(thisPtr->fps), RGB(255, 255, 255), thisPtr->hMainFont);
+            thisPtr->cam.Write(hdc, 10, 35, "Position: "+(std::string)thisPtr->cam.position, RGB(255, 255, 255), thisPtr->hMainFont);
+            thisPtr->cam.Write(hdc, 10, 60, "Angle: "+(std::string)thisPtr->cam.lookDir, RGB(255, 255, 255), thisPtr->hMainFont);
+            thisPtr->cam.Write(hdc, 10, 85, "Light: "+(std::string)thisPtr->cam.lightDir, RGB(255, 255, 255), thisPtr->hMainFont);
             
             EndPaint(hwnd, &ps);
             break;
