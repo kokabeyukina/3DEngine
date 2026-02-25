@@ -37,3 +37,7 @@ g++ *.cpp resource.o -lgdi32 -lopengl32 -lglu32 -o engine -O0 -Wall -Wextra -Wpe
 ```
 g++ *.cpp resource.o -lgdi32 -lopengl32 -lglu32 -o engine -O3 -mwindows -std=c++20
 ```
+* **Wine Compatible:** In case you want to run the program on Linux or MacOS. This version is considerably larger, due to the inclusion of linked DLLs. Since it hasn't been optimized for these systems, the program may contain some bugs.
+```
+g++ *.cpp resource.o -lgdi32 -lopengl32 -lglu32 -o engine-wine -O3 -mwindows -std=c++20 -static-libgcc -static-libstdc++ -static
+```
